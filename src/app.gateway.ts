@@ -5,7 +5,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 type PaintCoords = {
   x: number;
@@ -16,14 +16,32 @@ type PaintCoords = {
 
 @WebSocketGateway({ cors: true })
 export class AppGateway {
+  @WebSocketServer() server: Server;
+
   @SubscribeMessage('paint')
-  painting(
+  async painting(
     @MessageBody() data: PaintCoords,
     @ConnectedSocket() socket: Socket,
   ) {
-    socket.broadcast.emit('paint', data);
+    const sockets = await this.server.fetchSockets();
+    sockets.forEach((s) => {
+      if (s.id !== socket.id) {
+        socket.broadcast.to('test').emit('repaint', data);
+      }
+    });
   }
+
+  @SubscribeMessage('clear')
+  async clear(@ConnectedSocket() socket: Socket) {
+    const sockets = await this.server.fetchSockets();
+    sockets.forEach((s) => {
+      if (s.id !== socket.id) {
+        socket.broadcast.to('test').emit('clear_canvas');
+      }
+    });
+  }
+
   handleConnection(socket: Socket) {
-    console.log('conn', socket);
+    socket.join('test');
   }
 }
