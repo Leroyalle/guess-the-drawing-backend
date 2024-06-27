@@ -41,6 +41,22 @@ export class AppGateway {
     });
   }
 
+  @SubscribeMessage('send_message')
+  async onSendMessage(
+    @MessageBody() data: string,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const sockets = await this.server.fetchSockets();
+    console.log('ДО ФОРИЧА', data);
+    // sockets.forEach((s) => {
+    //   if (s.id !== socket.id) {
+    console.log('ПОСЛЕ', data);
+    socket.broadcast.to('test').emit('get_message', data);
+    // }
+  }
+  // );
+  // }
+
   handleConnection(socket: Socket) {
     socket.join('test');
   }
